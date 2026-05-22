@@ -41,6 +41,9 @@ async function run() {
       DROP TABLE IF EXISTS attachments           CASCADE;
       DROP TABLE IF EXISTS webhooks              CASCADE;
       DROP TABLE IF EXISTS webhook_deliveries    CASCADE;
+
+      DROP TABLE IF EXISTS part135_records       CASCADE;
+      DROP TABLE IF EXISTS vertiport_slots       CASCADE;
     `);
 
     console.log('[seed] applying migrations...');
@@ -48,6 +51,13 @@ async function run() {
     await client.query(schema1);
     const schema2 = fs.readFileSync(path.join(__dirname, '..', 'migrations', '002_schema.sql'), 'utf8');
     await client.query(schema2);
+    // Apply pass 7: Part 135 ledger + vertiport scheduling slots
+    try {
+      const schema3 = fs.readFileSync(path.join(__dirname, '..', 'migrations', '003_schema.sql'), 'utf8');
+      await client.query(schema3);
+    } catch (e) {
+      console.warn('[seed] 003 migration skipped:', e.message);
+    }
 
     console.log('[seed] inserting drones...');
     const drones = [

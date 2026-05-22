@@ -102,6 +102,32 @@ function crud(base) {
   };
 }
 
+// Apply pass 7 — Part 135 ledger + vertiport scheduling slots
+export const part135RecordsApi  = crud('part135-records');
+export const vertiportSlotsApi  = crud('vertiport-slots');
+
+// Vertiport-slot conflicts (deterministic, no AI)
+export const getVertiportSlotConflicts = (vertiportId) => {
+  const qs = vertiportId ? `?vertiport_id=${encodeURIComponent(vertiportId)}` : '';
+  return request(`/vertiport-slots/conflicts${qs}`);
+};
+
+// External feed stubs (NEEDS-CREDS — return 503 until configured)
+export const getFeedsStatus       = () => request('/feeds/status');
+export const fetchNotamFeed       = () => request('/feeds/notam');
+export const refreshNotamFeed     = () => request('/feeds/notam/refresh', { method: 'POST' });
+export const fetchWeatherFeed     = () => request('/feeds/weather');
+export const refreshWeatherFeed   = () => request('/feeds/weather/refresh', { method: 'POST' });
+export const dispatchNotification = (body) => request('/feeds/notify/dispatch', { method: 'POST', body: JSON.stringify(body || {}) });
+
+// Autonomy advisory (ADVISORY ONLY — never commands a drone)
+export const autonomyBvlosFeasibility = (body) => request('/autonomy/bvlos-feasibility', { method: 'POST', body: JSON.stringify(body || {}) });
+export const autonomyRtlArbiter       = (body) => request('/autonomy/rtl-arbiter',       { method: 'POST', body: JSON.stringify(body || {}) });
+export const autonomySwarmDeconflict  = (body) => request('/autonomy/swarm-deconflict',  { method: 'POST', body: JSON.stringify(body || {}) });
+export const autonomyGeofenceAdvise   = (body) => request('/autonomy/geofence-advise',   { method: 'POST', body: JSON.stringify(body || {}) });
+export const autonomyEnergyBudget     = (body) => request('/autonomy/energy-budget',     { method: 'POST', body: JSON.stringify(body || {}) });
+export const autonomyDensityBundle    = (body) => request('/autonomy/density-bundle',    { method: 'POST', body: JSON.stringify(body || {}) });
+
 // 18 entity CRUD APIs
 export const dronesApi              = crud('drones');
 export const batteriesApi           = crud('batteries');
@@ -147,6 +173,12 @@ export const aiVertiportCapacityPlan  = (body) => request('/ai/vertiport-capacit
 export const aiContingencyLandingPlan = (body) => request('/ai/contingency-landing-plan', { method: 'POST', body: JSON.stringify(body || {}) });
 export const aiIncidentPostMortem     = (body) => request('/ai/incident-post-mortem',     { method: 'POST', body: JSON.stringify(body || {}) });
 export const aiVendorQualityScore     = (body) => request('/ai/vendor-quality-score',     { method: 'POST', body: JSON.stringify(body || {}) });
+
+// Apply pass 7 — 4 missing AI counterparts
+export const aiCustomerEtaNarrate     = (body) => request('/ai/customer-eta-narrate',     { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiWeightBalanceAdvise    = (body) => request('/ai/weight-balance-advise',    { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiDeliveryWindowPredict  = (body) => request('/ai/delivery-window-predict',  { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiNotamAwareReroute      = (body) => request('/ai/notam-aware-reroute',      { method: 'POST', body: JSON.stringify(body || {}) });
 
 // AI history
 export const getAIHistory = (feature, limit = 25) => {

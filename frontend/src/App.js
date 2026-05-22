@@ -48,10 +48,23 @@ import WebhooksPage from './pages/WebhooksPage';
 // Custom views (Flight Views)
 import CustomViewsPage from './pages/CustomViewsPage';
 
+// Apply pass 7 — new pages
+import Part135RecordsPage         from './pages/Part135RecordsPage';
+import VertiportSlotsPage         from './pages/VertiportSlotsPage';
+import AICustomerEtaNarratePage   from './pages/AICustomerEtaNarratePage';
+import AIWeightBalanceAdvisePage  from './pages/AIWeightBalanceAdvisePage';
+import AIDeliveryWindowPredictPage from './pages/AIDeliveryWindowPredictPage';
+import AINotamAwareReroutePage    from './pages/AINotamAwareReroutePage';
+import AutonomyAdvisoryPage       from './pages/AutonomyAdvisoryPage';
+import FeedsAdminPage             from './pages/FeedsAdminPage';
+
 import LoginPage from './pages/LoginPage';
 import { getToken } from './services/api';
 
 import './App.css';
+
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
 
 function RequireAuth({ children }) {
   const location = useLocation();
@@ -69,6 +82,9 @@ function ShellRoutes() {
         <Topbar />
         <div style={{ padding: '24px 32px' }}>
           <Routes>
+        <Route path="/codex/custom-viz" element={<CodexCustomVizFeature />} />
+        <Route path="/codex/operations" element={<CodexOperationsFeature />} />
+
             <Route path="/" element={<Dashboard />} />
 
             <Route path="/drones"               element={<DronesPage />} />
@@ -110,6 +126,16 @@ function ShellRoutes() {
             <Route path="/webhooks" element={<WebhooksPage />} />
 
             <Route path="/custom-views" element={<CustomViewsPage />} />
+
+            {/* Apply pass 7 — new routes (mounted BEFORE the 404 fallback) */}
+            <Route path="/part135-records"            element={<Part135RecordsPage />} />
+            <Route path="/vertiport-slots"            element={<VertiportSlotsPage />} />
+            <Route path="/ai/customer-eta-narrate"    element={<AICustomerEtaNarratePage />} />
+            <Route path="/ai/weight-balance-advise"   element={<AIWeightBalanceAdvisePage />} />
+            <Route path="/ai/delivery-window-predict" element={<AIDeliveryWindowPredictPage />} />
+            <Route path="/ai/notam-aware-reroute"     element={<AINotamAwareReroutePage />} />
+            <Route path="/autonomy-advisory"          element={<AutonomyAdvisoryPage />} />
+            <Route path="/feeds-admin"                element={<FeedsAdminPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

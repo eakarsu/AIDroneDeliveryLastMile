@@ -88,6 +88,16 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 // Custom views (Flight Views page: map, battery grid, mission funnel, vertiport capacity)
 app.use('/api/custom-views', require('./routes/customViews'));
 
+// ─── Apply pass 7 (full backlog implementation) ─────────────────────────────
+// Part 135 consolidated records ledger (CRUD)
+app.use('/api/part135-records',  require('./routes/part135Records'));
+// Vertiport scheduling slots + deterministic conflict detector
+app.use('/api/vertiport-slots',  require('./routes/vertiportSlots'));
+// External feed stubs (NEEDS-CREDS: NOTAM, weather, notification dispatch)
+app.use('/api/feeds',            require('./routes/feeds'));
+// Autonomy ADVISORY-ONLY endpoints (TOO-RISKY items per audit note)
+app.use('/api/autonomy',         require('./routes/autonomyAdvisory'));
+
 app.listen(PORT, () => {
   console.log(`\nAI Drone Delivery Last-Mile API running on http://localhost:${PORT}\n`);
 });

@@ -388,6 +388,79 @@ async function vendorQualityScore(vendor, metrics = {}) {
   return safeJsonParse(r, { summary: typeof r === 'string' ? r : 'No response', scores: {} });
 }
 
+// ─── Apply pass 7: 4 missing AI counterparts ──────────────────────────────
+
+// 17. Customer ETA Narrator — natural-language ETA updates tied to in-flight progress
+async function customerEtaNarrate(mission = {}, telemetry = {}) {
+  const sys = `${SYSTEM_PROMPT} Generate a short, customer-friendly ETA narration for an in-flight delivery. Return strict JSON:
+{
+  "mission_id": string,
+  "current_phase": "preflight"|"climb"|"cruise"|"approach"|"landing"|"completed"|"aborted",
+  "eta_minutes": number,
+  "confidence": "low"|"medium"|"high",
+  "headline": string,
+  "narration": string,
+  "next_update_in_min": number,
+  "summary": string
+}`;
+  const usr = `Mission:\n${JSON.stringify(mission, null, 2)}\nTelemetry:\n${JSON.stringify(telemetry, null, 2)}`;
+  const r = await callOpenRouter(sys, usr);
+  return safeJsonParse(r, { summary: typeof r === 'string' ? r : 'No response' });
+}
+
+// 18. Weight & Balance Advisor — CG calculation + load placement guidance
+async function weightBalanceAdvise(payloads = [], droneSpec = {}) {
+  const sys = `${SYSTEM_PROMPT} Compute load placement / CG (center of gravity) advisory for a multi-package payload. Return strict JSON:
+{
+  "drone": string,
+  "mtow_kg": number,
+  "total_payload_kg": number,
+  "cg_offset_cm": number,
+  "cg_within_envelope": boolean,
+  "load_plan": [{ "package_id": string, "bay": string, "weight_kg": number, "moment_arm_cm": number, "rationale": string }],
+  "warnings": [string],
+  "summary": string
+}`;
+  const usr = `Drone spec / envelope:\n${JSON.stringify(droneSpec, null, 2)}\nPayloads:\n${JSON.stringify(payloads, null, 2)}`;
+  const r = await callOpenRouter(sys, usr);
+  return safeJsonParse(r, { summary: typeof r === 'string' ? r : 'No response', load_plan: [] });
+}
+
+// 19. Delivery-window Predictor — probabilistic on-time across pending missions
+async function deliveryWindowPredict(missions = [], context = {}) {
+  const sys = `${SYSTEM_PROMPT} Predict on-time delivery probability and likely window for each pending mission. Return strict JSON:
+{
+  "predictions": [{
+    "mission_id": string,
+    "on_time_prob_pct": number,
+    "predicted_window": { "earliest": string, "latest": string },
+    "drivers": [string],
+    "risk": "low"|"medium"|"high"
+  }],
+  "fleet_on_time_pct": number,
+  "summary": string
+}`;
+  const usr = `Pending missions:\n${JSON.stringify(missions, null, 2)}\nContext:\n${JSON.stringify(context, null, 2)}`;
+  const r = await callOpenRouter(sys, usr);
+  return safeJsonParse(r, { summary: typeof r === 'string' ? r : 'No response', predictions: [] });
+}
+
+// 20. NOTAM-aware route re-optimizer — re-route given live NOTAMs
+async function notamAwareReroute(route = {}, notams = [], droneSpec = {}) {
+  const sys = `${SYSTEM_PROMPT} Re-optimize a planned route corridor given live NOTAMs / TFRs. Return strict JSON:
+{
+  "original_corridor": string,
+  "notam_hits": [{ "notam_id": string, "summary": string, "severity": "low"|"medium"|"high", "action": "avoid"|"transit"|"delay" }],
+  "reoptimized_route": { "waypoints": [string], "length_km": number, "altitude_ft_agl": number, "rationale": string },
+  "delta_vs_original": { "extra_km": number, "extra_minutes": number },
+  "go_no_go_recommendation": "go"|"caution"|"no_go",
+  "summary": string
+}`;
+  const usr = `Route:\n${JSON.stringify(route, null, 2)}\nNOTAMs:\n${JSON.stringify(notams, null, 2)}\nDrone spec:\n${JSON.stringify(droneSpec, null, 2)}`;
+  const r = await callOpenRouter(sys, usr);
+  return safeJsonParse(r, { summary: typeof r === 'string' ? r : 'No response', notam_hits: [] });
+}
+
 module.exports = {
   callOpenRouter,
   safeJsonParse,
@@ -407,4 +480,9 @@ module.exports = {
   contingencyLandingPlan,
   incidentPostMortem,
   vendorQualityScore,
+  // Apply pass 7
+  customerEtaNarrate,
+  weightBalanceAdvise,
+  deliveryWindowPredict,
+  notamAwareReroute,
 };

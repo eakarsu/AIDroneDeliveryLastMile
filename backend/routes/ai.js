@@ -233,6 +233,131 @@ const SAMPLES = {
     { label: 'Volansi (deep-rural)',         values: { vendor: 'Volansi Inc.',           metrics_notes: 'On-time 91%, MTOW 9 kg, fewer pilots qualified, support response 8 hr.' } },
     { label: 'Manna Aero (Dublin)',          values: { vendor: 'Manna Aero',             metrics_notes: 'On-time 94% in food cat, EASA Specific Cat compliant, no hazmat capability.' } },
   ],
+
+  // ─── Apply pass 7 samples ────────────────────────────────────────────
+  'customer-eta-narrate': [
+    { label: 'MSN-2026-0001 Mercy blood, cruise',  values: { mission_id: 'MSN-2026-0001', phase: 'cruise',   distance_remaining_km: 1.2, wind_kt: 8,  notes: 'Code-Red blood product, Mercy Hospital, on schedule.' } },
+    { label: 'MSN-2026-0010 weather delay',         values: { mission_id: 'MSN-2026-0010', phase: 'preflight',distance_remaining_km: 0,   wind_kt: 22, notes: 'Granbury TX wind above tolerance, delay 90 min.' } },
+    { label: 'MSN-2026-0014 Dallas approach',       values: { mission_id: 'MSN-2026-0014', phase: 'approach', distance_remaining_km: 0.4, wind_kt: 6,  notes: 'Walmart grocery customer, observer in position.' } },
+    { label: 'MSN-2026-0003 Muhanga climb',         values: { mission_id: 'MSN-2026-0003', phase: 'climb',    distance_remaining_km: 22,  wind_kt: 11, notes: 'Medical supply, RCAA priority lane.' } },
+    { label: 'MSN-2026-0012 abort + RTH',           values: { mission_id: 'MSN-2026-0012', phase: 'aborted',  distance_remaining_km: 0,   wind_kt: 5,  notes: 'Aborted mid-flight, returning to Kigali Vertiport.' } },
+  ],
+
+  'weight-balance-advise': [
+    {
+      label: 'Wing Mk2 — 3 packages',
+      values: {
+        payloads_json: JSON.stringify([
+          { package_id: 'PKG-2026-0002', weight_kg: 0.9, bay_preference: 'forward' },
+          { package_id: 'PKG-2026-0014', weight_kg: 0.6, bay_preference: 'center' },
+          { package_id: 'PKG-2026-0010', weight_kg: 0.3, bay_preference: 'aft' },
+        ], null, 2),
+        drone_spec: 'Wing Mk2 MTOW 2.5 kg, single-bay tandem, CG window ±4 cm from datum.',
+      },
+    },
+    {
+      label: 'Zipline P2 — blood + Rx',
+      values: {
+        payloads_json: JSON.stringify([
+          { package_id: 'PKG-2026-0001', weight_kg: 1.25, bay_preference: 'forward' },
+          { package_id: 'PKG-2026-0011', weight_kg: 0.6,  bay_preference: 'aft' },
+        ], null, 2),
+        drone_spec: 'Zipline P2 MTOW 2.5 kg, fixed-wing, CG ±3 cm.',
+      },
+    },
+    {
+      label: 'Zipline P1 — heavy medical',
+      values: {
+        payloads_json: JSON.stringify([
+          { package_id: 'PKG-2026-0003', weight_kg: 3.8, bay_preference: 'center' },
+          { package_id: 'PKG-2026-0009', weight_kg: 1.5, bay_preference: 'forward' },
+        ], null, 2),
+        drone_spec: 'Zipline P1 MTOW 4.0 kg, CG window ±5 cm.',
+      },
+    },
+    {
+      label: 'Skyports CarrierBot — lab',
+      values: {
+        payloads_json: JSON.stringify([
+          { package_id: 'PKG-2026-0008', weight_kg: 2.0, bay_preference: 'center' },
+          { package_id: 'PKG-2026-0015', weight_kg: 1.9, bay_preference: 'center' },
+        ], null, 2),
+        drone_spec: 'Skyports CarrierBot MTOW 4.0 kg, cold-chain pod, CG ±4 cm.',
+      },
+    },
+    {
+      label: 'Wing Hummingbird — Logan',
+      values: {
+        payloads_json: JSON.stringify([
+          { package_id: 'PKG-2026-0004', weight_kg: 0.45, bay_preference: 'forward' },
+          { package_id: 'PKG-2026-0013', weight_kg: 0.30, bay_preference: 'aft' },
+          { package_id: 'PKG-2026-0007', weight_kg: 1.10, bay_preference: 'center' },
+        ], null, 2),
+        drone_spec: 'Wing Hummingbird MTOW 1.4 kg, CG ±2 cm.',
+      },
+    },
+  ],
+
+  'delivery-window-predict': [
+    { label: 'All pending missions',          values: { notes: '' } },
+    { label: 'US ops bias',                   values: { notes: 'Bias toward US Part 135 missions (Charlotte / Dallas / Logan / Bentonville).' } },
+    { label: 'Rwanda + Ghana medical',        values: { notes: 'Focus on Rwanda + Ghana medical corridors only.' } },
+    { label: 'EU food + retail',              values: { notes: 'Focus on Manna IE + DHL DE retail / food missions.' } },
+    { label: 'Surge week',                    values: { notes: 'Assume +25% demand surge across all hubs this week.' } },
+  ],
+
+  'notam-aware-reroute': [
+    {
+      label: 'Charlotte med corridor + KCLT TFR',
+      values: {
+        route_notes: 'Mercy Hospital → 4521 Oak Ridge, 1.8 km, FL000-FL004 (0-400 ft AGL).',
+        notams_json: JSON.stringify([
+          { notam_id: 'A1234/26', summary: 'KCLT VIP TFR sfc-3000 1400-1700Z', severity: 'high' },
+        ], null, 2),
+        drone_spec: 'Zipline P2 MTOW 2.5 kg, parachute equipped.',
+      },
+    },
+    {
+      label: 'Phoenix corridor + wildfire TFR',
+      values: {
+        route_notes: 'Phoenix Reserve Hub → Glendale sector, 4 km, sub-400 ft AGL.',
+        notams_json: JSON.stringify([
+          { notam_id: 'A8876/26', summary: 'Wildfire TFR sfc-8000, 30 nm radius KIWA', severity: 'high' },
+        ], null, 2),
+        drone_spec: 'Matternet M2 MTOW 2 kg.',
+      },
+    },
+    {
+      label: 'Singapore CTR + airshow NOTAM',
+      values: {
+        route_notes: 'Skyports Hub → Singapore General Hospital, 8 km, dense urban.',
+        notams_json: JSON.stringify([
+          { notam_id: 'C0312/26', summary: 'CAAS airshow box, Marina Bay, 0800-1000Z', severity: 'medium' },
+        ], null, 2),
+        drone_spec: 'Skyports CarrierBot MTOW 4 kg.',
+      },
+    },
+    {
+      label: 'Frankfurt + EDDF SID change',
+      values: {
+        route_notes: 'Frankfurt DHL Hub → Bad Homburg, 14 km, FL000-FL015.',
+        notams_json: JSON.stringify([
+          { notam_id: 'D2218/26', summary: 'EDDF SID 26L revised, helo lane closed', severity: 'medium' },
+        ], null, 2),
+        drone_spec: 'Volansi VOLY M20 MTOW 9 kg.',
+      },
+    },
+    {
+      label: 'Muhanga + RW closure',
+      values: {
+        route_notes: 'Kigali Vertiport → Muhanga District Hospital, 22 km, mountain.',
+        notams_json: JSON.stringify([
+          { notam_id: 'R0091/26', summary: 'Live-fire range active 1200-1500Z near corridor', severity: 'high' },
+        ], null, 2),
+        drone_spec: 'Zipline P1 MTOW 4 kg.',
+      },
+    },
+  ],
 };
 
 // GET /api/ai/samples?feature=<verb>
@@ -490,6 +615,72 @@ router.post('/vendor-quality-score', async (req, res) => {
     const { vendor = '', metrics_notes = '' } = req.body || {};
     const result = await ai.vendorQualityScore({ name: vendor }, { notes: metrics_notes });
     await record('vendor-quality-score', { vendor, metrics_notes }, result);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Apply pass 7: 4 missing AI counterparts ──────────────────────────────
+
+// 17. POST /api/ai/customer-eta-narrate
+router.post('/customer-eta-narrate', async (req, res) => {
+  try {
+    const { mission_id = '', phase = '', distance_remaining_km = 0, wind_kt = 0, notes = '' } = req.body || {};
+    let mission = { mission_id };
+    if (mission_id) {
+      try {
+        const r = await pool.query('SELECT * FROM missions WHERE mission_id = $1 LIMIT 1', [mission_id]);
+        if (r.rows.length) mission = r.rows[0];
+      } catch (_) {}
+    }
+    const telemetry = { phase, distance_remaining_km, wind_kt, notes };
+    const result = await ai.customerEtaNarrate(mission, telemetry);
+    await record('customer-eta-narrate', { mission_id, phase, distance_remaining_km, wind_kt, notes }, result);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 18. POST /api/ai/weight-balance-advise
+router.post('/weight-balance-advise', async (req, res) => {
+  try {
+    let { payloads, payloads_json, drone_spec } = req.body || {};
+    if (!payloads && payloads_json) {
+      try { payloads = JSON.parse(payloads_json); } catch (_) { payloads = []; }
+    }
+    if (!Array.isArray(payloads) || payloads.length === 0) {
+      const r = await pool.query("SELECT * FROM packages WHERE status='pending' ORDER BY id ASC LIMIT 10");
+      payloads = r.rows;
+    }
+    const result = await ai.weightBalanceAdvise(payloads, { notes: drone_spec || '' });
+    await record('weight-balance-advise', { count: payloads.length, drone_spec }, result);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 19. POST /api/ai/delivery-window-predict
+router.post('/delivery-window-predict', async (req, res) => {
+  try {
+    const { notes = '' } = req.body || {};
+    let missions = [];
+    try {
+      const r = await pool.query("SELECT * FROM missions WHERE status IN ('planning','scheduled','in_flight') ORDER BY id ASC LIMIT 25");
+      missions = r.rows;
+    } catch (_) {}
+    const result = await ai.deliveryWindowPredict(missions, { notes });
+    await record('delivery-window-predict', { notes, mission_count: missions.length }, result);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 20. POST /api/ai/notam-aware-reroute
+router.post('/notam-aware-reroute', async (req, res) => {
+  try {
+    let { route_notes = '', notams, notams_json, drone_spec = '' } = req.body || {};
+    if (!notams && notams_json) {
+      try { notams = JSON.parse(notams_json); } catch (_) { notams = []; }
+    }
+    if (!Array.isArray(notams)) notams = [];
+    const result = await ai.notamAwareReroute({ notes: route_notes }, notams, { notes: drone_spec });
+    await record('notam-aware-reroute', { route_notes, notam_count: notams.length, drone_spec }, result);
     res.json(result);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

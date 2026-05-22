@@ -25,9 +25,10 @@ const MISSIONS_LINKS = [
 ];
 
 const VERTIPORTS_LINKS = [
-  { to: '/depots',          label: 'Depots' },
-  { to: '/vertiports',      label: 'Vertiports' },
-  { to: '/route-corridors', label: 'Route Corridors' },
+  { to: '/depots',           label: 'Depots' },
+  { to: '/vertiports',       label: 'Vertiports' },
+  { to: '/vertiport-slots',  label: 'Vertiport Slots' },
+  { to: '/route-corridors',  label: 'Route Corridors' },
 ];
 
 const PILOTS_LINKS = [
@@ -38,6 +39,7 @@ const PILOTS_LINKS = [
 const REGULATORY_LINKS = [
   { to: '/regulatory-approvals', label: 'Regulatory Approvals' },
   { to: '/airspace-zones',       label: 'Airspace Zones' },
+  { to: '/part135-records',      label: 'Part 135 Records' },
 ];
 
 const GOVERNANCE_LINKS = [
@@ -49,8 +51,10 @@ const AI_PLANNING_LINKS = [
   { to: '/ai/weather-flight-window',    label: 'AI · Weather Flight Window' },
   { to: '/ai/mission-brief',            label: 'AI · Mission Brief' },
   { to: '/ai/payload-weight-optimize',  label: 'AI · Payload Weight Optimize' },
+  { to: '/ai/weight-balance-advise',    label: 'AI · Weight & Balance Advisor' },
   { to: '/ai/regulatory-checklist',     label: 'AI · Regulatory Checklist' },
   { to: '/ai/pilot-shift-schedule',     label: 'AI · Pilot Shift Schedule' },
+  { to: '/ai/notam-aware-reroute',      label: 'AI · NOTAM-aware Reroute' },
 ];
 
 const AI_OPERATIONS_LINKS = [
@@ -60,13 +64,20 @@ const AI_OPERATIONS_LINKS = [
   { to: '/ai/vertiport-capacity-plan',  label: 'AI · Vertiport Capacity Plan' },
   { to: '/ai/contingency-landing-plan', label: 'AI · Contingency Landing Plan' },
   { to: '/ai/customer-comms-draft',     label: 'AI · Customer Comms Draft' },
+  { to: '/ai/customer-eta-narrate',     label: 'AI · Customer ETA Narrator' },
 ];
 
 const AI_REPORTING_LINKS = [
-  { to: '/ai/executive-brief',         label: 'AI · Executive Brief' },
-  { to: '/ai/battery-cycle-prognostic',label: 'AI · Battery Cycle Prognostic' },
-  { to: '/ai/incident-post-mortem',    label: 'AI · Incident Post-Mortem' },
-  { to: '/ai/vendor-quality-score',    label: 'AI · Vendor Quality Score' },
+  { to: '/ai/executive-brief',          label: 'AI · Executive Brief' },
+  { to: '/ai/battery-cycle-prognostic', label: 'AI · Battery Cycle Prognostic' },
+  { to: '/ai/incident-post-mortem',     label: 'AI · Incident Post-Mortem' },
+  { to: '/ai/vendor-quality-score',     label: 'AI · Vendor Quality Score' },
+  { to: '/ai/delivery-window-predict',  label: 'AI · Delivery Window Predictor' },
+];
+
+// Apply pass 7 — Autonomy advisory + external feed admin
+const AUTONOMY_LINKS = [
+  { to: '/autonomy-advisory', label: 'Autonomy · Advisory Tools' },
 ];
 
 export default function Sidebar() {
@@ -132,8 +143,14 @@ export default function Sidebar() {
         <NavLink key={l.to} to={l.to}>{l.label}</NavLink>
       ))}
 
+      <div className="sidebar-group-label">Autonomy (Advisory)</div>
+      {AUTONOMY_LINKS.map((l) => (
+        <NavLink key={l.to} to={l.to}>{l.label}</NavLink>
+      ))}
+
       <div className="sidebar-group-label">Admin</div>
       <NavLink to="/webhooks">Webhooks</NavLink>
+      <NavLink to="/feeds-admin">External Feeds</NavLink>
 
       <div className="sidebar-user">
         {user && (
