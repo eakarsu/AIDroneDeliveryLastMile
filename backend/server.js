@@ -27,6 +27,7 @@ async function onIncidentCreated(row) {
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3091;
+const HOST = process.env.HOST || '127.0.0.1';
 
 // Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -35,13 +36,13 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3090,ht
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
     return cb(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
 }));
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Health check (public)
 app.get('/api/health', (req, res) => {
@@ -53,6 +54,16 @@ app.use('/api/auth', require('./routes/auth'));
 
 // Everything below this line requires a Bearer token.
 app.use('/api', authenticateToken);
+
+// Supported primary workflow. It records authorization and external outcomes,
+// but never sends commands to an aircraft or airspace provider.
+app.use('/api/governed-missions', require('./routes/governedMissions'));
+
+// The broad legacy CRUD/demo surface predates tenant scoping. Keep it
+// quarantined until an owner explicitly opts in and migrates every route.
+if (process.env.ENABLE_LEGACY_ROUTES !== 'true') {
+  app.use('/api', (req, res) => res.status(404).json({ error: 'Legacy routes are disabled; use /api/governed-missions' }));
+}
 
 // 18 CRUD entity routes (built via _crudFactory which already embeds RBAC + bulk-import + attachments)
 app.use('/api/drones',                require('./routes/drones'));
@@ -98,6 +109,12 @@ app.use('/api/feeds',            require('./routes/feeds'));
 // Autonomy ADVISORY-ONLY endpoints (TOO-RISKY items per audit note)
 app.use('/api/autonomy',         require('./routes/autonomyAdvisory'));
 
-app.listen(PORT, () => {
-  console.log(`\nAI Drone Delivery Last-Mile API running on http://localhost:${PORT}\n`);
+app.use((err, req, res, next) => {
+  console.error('Request failed:', err.message);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+app.listen(PORT, HOST, () => {
+  console.log(`\nAI Drone Delivery Last-Mile API running on http://${HOST}:${PORT}`);
+  console.log(`Legacy routes: ${process.env.ENABLE_LEGACY_ROUTES === 'true' ? 'enabled' : 'disabled'}\n`);
 });

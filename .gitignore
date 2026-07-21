@@ -2,6 +2,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.example
 *.log
 *.key
 *.pem
@@ -17,6 +18,7 @@ secrets.*
 *.key
 **/credentials*.json
 **/serviceAccount*.json
+!.env.example
 
 # --- secrets: never commit ---
 .env
@@ -31,3 +33,4 @@ token.txt
 id_rsa*
 **/credentials*.json
 **/serviceAccount*.json
+!.env.example

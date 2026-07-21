@@ -1,104 +1,34 @@
-#!/bin/bash
-
-set -e
-
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
-echo -e "${CYAN}╔══════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  AI Drone Delivery Last-Mile - BVLOS Ops Console     ║${NC}"
-echo -e "${CYAN}╚══════════════════════════════════════════════════════╝${NC}"
-echo ""
-
-# Load env
-if [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+#!/usr/bin/env bash
+set -euo pipefail
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PROJECT_DIR"
+if [[ -f .env ]]; then
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ "$line" == export\ * ]] && line="${line#export }"
+    key="${line%%=*}"
+    value="${line#*=}"
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ && "$line" == *=* ]] || continue
+    [[ -n "${!key+x}" ]] && continue
+    if [[ "$value" == \"*\" && "$value" == *\" ]]; then value="${value:1:${#value}-2}"; fi
+    if [[ "$value" == \'*\' && "$value" == *\' ]]; then value="${value:1:${#value}-2}"; fi
+    export "$key=$value"
+  done < .env
 fi
-
-BACKEND_PORT=${BACKEND_PORT:-3091}
-FRONTEND_PORT=${FRONTEND_PORT:-3090}
-
-# Kill processes on used ports
-echo -e "${YELLOW}Cleaning up ports $BACKEND_PORT and $FRONTEND_PORT...${NC}"
-lsof -ti:$BACKEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-lsof -ti:$FRONTEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-sleep 1
-echo -e "${GREEN}✓ Ports cleaned${NC}"
-
-# Check PostgreSQL
-echo -e "${YELLOW}Checking PostgreSQL...${NC}"
-if ! command -v psql &> /dev/null; then
-  echo -e "${RED}PostgreSQL is not installed. Please install it first.${NC}"
-  exit 1
-fi
-
-if ! pg_isready -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} > /dev/null 2>&1; then
-  echo -e "${YELLOW}Starting PostgreSQL...${NC}"
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    brew services start postgresql@14 2>/dev/null || brew services start postgresql 2>/dev/null || true
-  else
-    sudo systemctl start postgresql 2>/dev/null || true
-  fi
-  sleep 2
-fi
-echo -e "${GREEN}✓ PostgreSQL is running${NC}"
-
-# Create database if not exists
-echo -e "${YELLOW}Setting up database...${NC}"
-psql -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} -U ${DB_USER:-postgres} -tc "SELECT 1 FROM pg_database WHERE datname = '${DB_NAME:-drone_delivery}'" 2>/dev/null | grep -q 1 || \
-  psql -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} -U ${DB_USER:-postgres} -c "CREATE DATABASE ${DB_NAME:-drone_delivery}" 2>/dev/null || \
-  createdb -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} -U ${DB_USER:-postgres} ${DB_NAME:-drone_delivery} 2>/dev/null || true
-echo -e "${GREEN}✓ Database ready${NC}"
-
-# Install dependencies
-echo -e "${YELLOW}Installing dependencies...${NC}"
-cd backend && npm install --silent 2>/dev/null && cd ..
-cd frontend && npm install --silent 2>/dev/null && cd ..
-echo -e "${GREEN}✓ Dependencies installed${NC}"
-
-# Seed database
-echo -e "${YELLOW}Seeding database...${NC}"
-cd backend && node seed/seed.js && cd ..
-echo -e "${GREEN}✓ Database seeded${NC}"
-
-# Start backend with nodemon (auto-reload)
-echo -e "${BLUE}Starting backend on port $BACKEND_PORT...${NC}"
-(cd backend && npx nodemon server.js) &
-BACKEND_PID=$!
-
-sleep 2
-
-# Start frontend (React dev server auto-reloads)
-echo -e "${BLUE}Starting frontend on port $FRONTEND_PORT...${NC}"
-(cd frontend && BROWSER=none PORT=$FRONTEND_PORT npm start) &
-FRONTEND_PID=$!
-
-echo ""
-echo -e "${GREEN}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  Application is starting...                      ║${NC}"
-echo -e "${GREEN}║  Frontend: http://localhost:$FRONTEND_PORT              ║${NC}"
-echo -e "${GREEN}║  Backend:  http://localhost:$BACKEND_PORT              ║${NC}"
-echo -e "${GREEN}║                                                  ║${NC}"
-echo -e "${GREEN}║  Both servers auto-reload on file changes        ║${NC}"
-echo -e "${GREEN}╚══════════════════════════════════════════════════╝${NC}"
-echo ""
-
-# Trap to cleanup on exit
-cleanup() {
-  echo -e "\n${YELLOW}Shutting down...${NC}"
-  kill $BACKEND_PID 2>/dev/null || true
-  kill $FRONTEND_PID 2>/dev/null || true
-  lsof -ti:$BACKEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-  lsof -ti:$FRONTEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-  echo -e "${GREEN}✓ Shutdown complete${NC}"
-  exit 0
-}
-
-trap cleanup SIGINT SIGTERM
-
-wait
+BACKEND_PORT="${BACKEND_PORT:-3091}"
+FRONTEND_PORT="${FRONTEND_PORT:-3090}"
+export ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-http://127.0.0.1:$FRONTEND_PORT}"
+export REACT_APP_API_BASE="${REACT_APP_API_BASE:-http://127.0.0.1:$BACKEND_PORT/api}"
+for directory in backend/node_modules frontend/node_modules; do
+  [[ -d "$directory" ]] || { echo "Missing $directory; install dependencies explicitly first." >&2; exit 1; }
+done
+for port in "$BACKEND_PORT" "$FRONTEND_PORT"; do
+  if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then echo "Port $port is already in use; refusing to stop another process." >&2; exit 1; fi
+done
+(cd backend && npm start) & BACKEND_PID=$!
+(cd frontend && BROWSER=none HOST="${FRONTEND_HOST:-127.0.0.1}" PORT="$FRONTEND_PORT" npm start) & FRONTEND_PID=$!
+cleanup() { kill "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true; wait "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true; }
+trap cleanup EXIT INT TERM
+echo "Drone API: http://127.0.0.1:$BACKEND_PORT; UI: http://127.0.0.1:$FRONTEND_PORT"
+wait "$BACKEND_PID" "$FRONTEND_PID"

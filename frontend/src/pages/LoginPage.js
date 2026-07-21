@@ -4,8 +4,8 @@ import { login, setToken, setStoredUser } from '../services/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@dronedeliver.io');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -57,10 +57,6 @@ export default function LoginPage() {
         <button className="btn" type="submit" disabled={loading} style={{ width: '100%' }}>
           {loading ? <><span className="spinner" />Authenticating...</> : 'Sign In'}
         </button>
-
-        <p className="login-hint">
-          Demo: <code>admin@dronedeliver.io</code> / <code>admin123</code>
-        </p>
       </form>
     </div>
   );

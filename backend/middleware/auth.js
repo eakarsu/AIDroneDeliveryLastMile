@@ -2,8 +2,10 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || 'drone-delivery-lastmile-secret-key-2026';
+const JWT_SECRET = process.env.JWT_SECRET || '';
+if (JWT_SECRET.length < 32 || /change|replace|example|default/i.test(JWT_SECRET)) {
+  throw new Error('JWT_SECRET must be a unique value of at least 32 characters');
+}
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -15,6 +17,9 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded.id || !decoded.tenant_id || !ROLES.includes(decoded.role)) {
+      return res.status(401).json({ error: 'Token is missing required identity claims' });
+    }
     req.user = decoded;
     next();
   } catch (err) {

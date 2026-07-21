@@ -1,85 +1,47 @@
+'use strict';
+
 const express = require('express');
-const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET, authenticateToken } = require('../middleware/auth');
+const { JWT_SECRET, authenticateToken, requireCommander } = require('../middleware/auth');
 const pool = require('../config/database');
+const { verifyPassword } = require('../services/passwords');
 
-// Fallback demo commander used when the users table is unavailable
-// (e.g. before the v2 migration is applied). Never overwritten anywhere.
-const DEMO_USER = {
-  id: 1,
-  email: 'admin@dronedeliver.io',
-  password: 'admin123',
-  name: 'Admin',
-  role: 'admin',
-};
+const router = express.Router();
 
-async function findDbUser(email, password) {
+router.post('/login', async (req, res) => {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const password = req.body?.password;
+  if (!email.includes('@') || email.length > 150 || typeof password !== 'string' || password.length > 1024) {
+    return res.status(400).json({ error: 'Valid email and password are required' });
+  }
   try {
-    const r = await pool.query(
-      'SELECT id, email, password, name, role FROM users WHERE email = $1 LIMIT 1',
+    const result = await pool.query(
+      `SELECT id, tenant_id, email, password_hash, name, role
+         FROM users WHERE email = $1 AND tenant_id IS NOT NULL LIMIT 1`,
       [email]
     );
-    if (!r.rows.length) return null;
-    const u = r.rows[0];
-    if (u.password !== password) return null;
-    return { id: u.id, email: u.email, name: u.name, role: u.role };
-  } catch (e) {
-    return null;
-  }
-}
-
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ error: 'email and password are required' });
-    }
-
-    let user = await findDbUser(email, password);
-
-    if (!user) {
-      // Hardcoded demo commander still works even if users table missing
-      if (email === DEMO_USER.email && password === DEMO_USER.password) {
-        user = {
-          id: DEMO_USER.id,
-          email: DEMO_USER.email,
-          name: DEMO_USER.name,
-          role: DEMO_USER.role,
-        };
-      }
-    }
-
-    if (!user) {
+    const user = result.rows[0];
+    if (!user || !verifyPassword(password, user.password_hash)) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-
-    const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user });
-  } catch (e) {
-    console.error('Login error:', e);
-    res.status(500).json({ error: 'Server error' });
+    const claims = { id: user.id, tenant_id: user.tenant_id, email: user.email, name: user.name, role: user.role };
+    const token = jwt.sign(claims, JWT_SECRET, { expiresIn: '8h' });
+    return res.json({ token, user: claims });
+  } catch (error) {
+    console.error('Login unavailable:', error.message);
+    return res.status(503).json({ error: 'Authentication service unavailable' });
   }
 });
 
-// GET /api/auth/me
-router.get('/me', authenticateToken, (req, res) => {
-  res.json({
-    id: req.user.id,
-    email: req.user.email,
-    name: req.user.name,
-    role: req.user.role,
-  });
-});
-
-// GET /api/auth/users  (commander only)
-const { requireCommander } = require('../middleware/auth');
+router.get('/me', authenticateToken, (req, res) => res.json(req.user));
 router.get('/users', authenticateToken, requireCommander, async (req, res) => {
   try {
-    const r = await pool.query('SELECT id, email, name, role, created_at FROM users ORDER BY id ASC');
-    res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    const result = await pool.query(
+      'SELECT id, email, name, role, created_at FROM users WHERE tenant_id = $1 ORDER BY id ASC',
+      [req.user.tenant_id]
+    );
+    return res.json(result.rows);
+  } catch (_) { return res.status(500).json({ error: 'Unable to list users' }); }
 });
 
 module.exports = router;
