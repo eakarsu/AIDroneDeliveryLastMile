@@ -26,6 +26,9 @@ done
 for port in "$BACKEND_PORT" "$FRONTEND_PORT"; do
   if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then echo "Port $port is already in use; refusing to stop another process." >&2; exit 1; fi
 done
+if [[ "${MIGRATE_ON_START:-false}" == "true" ]]; then
+  (cd backend && ALLOW_DATABASE_MIGRATION=1 node scripts/migrate.js && node scripts/runtime-provision.js)
+fi
 (cd backend && npm start) & BACKEND_PID=$!
 (cd frontend && BROWSER=none HOST="${FRONTEND_HOST:-127.0.0.1}" PORT="$FRONTEND_PORT" npm start) & FRONTEND_PID=$!
 cleanup() { kill "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true; wait "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null || true; }

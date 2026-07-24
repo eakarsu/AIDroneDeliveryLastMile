@@ -33,7 +33,8 @@ function getOpenRouterCreds() {
   const fb = readFallbackEnv();
   const key = process.env.OPENROUTER_API_KEY || fb.OPENROUTER_API_KEY || '';
   const model = process.env.OPENROUTER_MODEL || fb.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5';
-  return { key, model };
+  const baseUrl = (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+  return { key, model, baseUrl };
 }
 
 const SYSTEM_PROMPT =
@@ -44,7 +45,7 @@ const SYSTEM_PROMPT =
 
 function callOpenRouter(systemPrompt, userPrompt) {
   return new Promise((resolve) => {
-    const { key, model } = getOpenRouterCreds();
+    const { key, model, baseUrl } = getOpenRouterCreds();
     if (!key) {
       return resolve({ error: 'OPENROUTER_API_KEY not configured' });
     }
@@ -59,9 +60,11 @@ function callOpenRouter(systemPrompt, userPrompt) {
       max_tokens: 2000,
     });
 
+    const apiUrl = new URL(`${baseUrl}/chat/completions`);
     const options = {
-      hostname: 'openrouter.ai',
-      path: '/api/v1/chat/completions',
+      hostname: apiUrl.hostname,
+      port: apiUrl.port || undefined,
+      path: `${apiUrl.pathname}${apiUrl.search}`,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
