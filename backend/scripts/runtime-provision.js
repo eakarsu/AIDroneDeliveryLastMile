@@ -10,6 +10,9 @@ async function main() {
   if (!tenant || !email || !password || password.length < 12) {
     throw new Error('Tenant, PROVISION_ADMIN_EMAIL, and a password of at least 12 characters are required');
   }
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100)');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT');
+  await pool.query('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
   await pool.query(
     `INSERT INTO users (email, name, role, tenant_id, password_hash)
      VALUES ($1, $2, 'admin', $3, $4)
